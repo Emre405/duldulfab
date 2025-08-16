@@ -6,6 +6,9 @@ import Login from "./Login";
 import { auth } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
+
 // Mock functions for readData and writeData to allow the app to run
 const mockData = {
     customers: [],
@@ -26,18 +29,62 @@ const mockData = {
     }
 };
 
-const readData = async () => {
-    console.log("Reading mock data");
-    const savedData = localStorage.getItem('safDamlaData');
-    if (savedData) {
-        return JSON.parse(savedData);
+const readData = async (userId) => {
+    if (!userId) {
+        console.log("No user ID, returning mock data");
+        return mockData;
     }
-    return mockData;
+
+    try {
+        console.log("Reading data from Firestore for user:", userId);
+        const docRef = doc(db, 'userData', userId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            console.log("Data found in Firestore");
+            return docSnap.data();
+        } else {
+            console.log("No data in Firestore, checking localStorage for migration");
+            const savedData = localStorage.getItem('safDamlaData');
+            if (savedData) {
+                const localData = JSON.parse(savedData);
+                console.log("Migrating localStorage data to Firestore");
+                await writeData(localData, userId);
+                // Veriyi taşıdıktan sonra localStorage'ı temizle
+                localStorage.removeItem('safDamlaData');
+                return localData;
+            }
+            console.log("No data found, returning mock data");
+            return mockData;
+        }
+    } catch (error) {
+        console.error("Error reading data from Firestore:", error);
+        // Firestore hatası durumunda localStorage'a fallback
+        const savedData = localStorage.getItem('safDamlaData');
+        if (savedData) {
+            return JSON.parse(savedData);
+        }
+        return mockData;
+    }
 };
 
-const writeData = async (data) => {
-    console.log("Writing mock data");
-    localStorage.setItem('safDamlaData', JSON.stringify(data));
+const writeData = async (data, userId) => {
+    if (!userId) {
+        console.log("No user ID, falling back to localStorage");
+        localStorage.setItem('safDamlaData', JSON.stringify(data));
+        return;
+    }
+
+    try {
+        console.log("Writing data to Firestore for user:", userId);
+        const docRef = doc(db, 'userData', userId);
+        await setDoc(docRef, data);
+        console.log("Data successfully written to Firestore");
+    } catch (error) {
+        console.error("Error writing data to Firestore:", error);
+        // Firestore hatası durumunda localStorage'a fallback
+        localStorage.setItem('safDamlaData', JSON.stringify(data));
+    }
 };
 
 
@@ -179,6 +226,10 @@ function calculateTinProfitLoss(tinPurchases, transactions) {
 function App() {
   // TÜM USESTATE'LER EN ÜSTTE OLMALI
   const [user, setUser] = useState(null);
+  
+  // Helper functions that use current user
+  const readUserData = async () => readData(user?.uid);
+  const writeUserData = async (data) => writeData(data, user?.uid);
   const [authChecked, setAuthChecked] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [customers, setCustomers] = useState([]);
@@ -223,7 +274,7 @@ function App() {
   // Data loading useEffect - MOVED BEFORE CONDITIONAL RETURNS
   useEffect(() => {
     async function fetchData() {
-      const data = await readData();
+      const data = await readData(user?.uid);
       setCustomers(data.customers || []);
       setTransactions(data.transactions || []);
       setWorkerExpenses(data.workerExpenses || []);
@@ -254,7 +305,7 @@ function App() {
       // You might replace this with a different backup mechanism for the web
       console.log("Attempting automatic backup...");
       try {
-        const data = await readData();
+        const data = await readUserData();
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         // This won't automatically download in the browser without user interaction.
         // It's logged to the console to show the backup would happen.
@@ -311,9 +362,9 @@ function App() {
   
   const handleSaveDefaultPrices = async (newPrices) => {
     try {
-      const data = await readData();
+      const data = await readData(user?.uid);
       data.defaultPrices = newPrices;
-      await writeData(data);
+      await writeData(data, user?.uid);
       setDefaultPrices(newPrices);
       showMessage('Varsayılan fiyatlar başarıyla kaydedildi!', 'success');
     } catch (error) {
@@ -325,7 +376,7 @@ function App() {
   // Müşteri ekleme/güncelleme
   const handleSaveCustomer = async (customerData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let customers = data.customers || [];
       if (customerData.id) {
         customers = customers.map(c => c.id === customerData.id ? { ...c, ...customerData } : c);
@@ -337,7 +388,7 @@ function App() {
         showMessage('Müşteri başarıyla eklendi!', 'success');
       }
       data.customers = customers;
-      await writeData(data);
+      await writeUserData(data);
       setCustomers(customers);
     } catch (error) {
       console.error('Error saving customer:', error);
@@ -348,7 +399,7 @@ function App() {
   // İşlem ekleme/güncelleme
   const handleSaveTransaction = async (transactionData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let transactions = data.transactions || [];
       let customerId = transactionData.customerId;
       if (!customerId) {
@@ -383,7 +434,7 @@ function App() {
         showMessage('İşlem başarıyla eklendi!', 'success');
       }
       data.transactions = transactions;
-      await writeData(data);
+      await writeUserData(data);
       setTransactions(transactions);
       handleCloseNewTransactionModal();
     } catch (error) {
@@ -395,7 +446,7 @@ function App() {
   // Tahsilat işlemi
   const handleCollectPayment = async (customerId, customerName, amount) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let transactions = data.transactions || [];
       const paymentTransaction = {
         id: Date.now().toString(),
@@ -418,7 +469,7 @@ function App() {
       };
       transactions.push(paymentTransaction);
       data.transactions = transactions;
-      await writeData(data);
+      await writeUserData(data);
       setTransactions(transactions);
       showMessage(`${formatNumber(amount, '₺')} tutarında tahsilat başarıyla kaydedildi.`, 'success');
     } catch (error) {
@@ -430,7 +481,7 @@ function App() {
   // Zeytinyağı alım kaydetme
   const handleSaveOilPurchase = async (purchaseData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let oilPurchases = data.oilPurchases || [];
       if (purchaseData.id) {
         oilPurchases = oilPurchases.map(p => p.id === purchaseData.id ? { ...p, ...purchaseData } : p);
@@ -442,7 +493,7 @@ function App() {
         showMessage('Zeytinyağı alımı başarıyla eklendi!', 'success');
       }
       data.oilPurchases = oilPurchases;
-      await writeData(data);
+      await writeUserData(data);
       setOilPurchases(oilPurchases);
     } catch (error) {
       console.error('Error saving oil purchase:', error);
@@ -453,7 +504,7 @@ function App() {
   // Zeytinyağı satım kaydetme
   const handleSaveOilSale = async (saleData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let oilSales = data.oilSales || [];
       if (saleData.id) {
         oilSales = oilSales.map(s => s.id === saleData.id ? { ...s, ...saleData } : s);
@@ -465,7 +516,7 @@ function App() {
         showMessage('Zeytinyağı satışı başarıyla eklendi!', 'success');
       }
       data.oilSales = oilSales;
-      await writeData(data);
+      await writeUserData(data);
       setOilSales(oilSales);
     } catch (error) {
       console.error('Error saving oil sale:', error);
@@ -476,7 +527,7 @@ function App() {
   // Giderler ve diğer veri işlemleri için benzer fonksiyonlar
   const handleSaveWorkerExpense = async (expenseData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let workerExpenses = data.workerExpenses || [];
       if (expenseData.id) {
         workerExpenses = workerExpenses.map(e => e.id === expenseData.id ? { ...e, ...expenseData } : e);
@@ -488,7 +539,7 @@ function App() {
         showMessage('İşçi harcaması başarıyla eklendi!', 'success');
       }
       data.workerExpenses = workerExpenses;
-      await writeData(data);
+      await writeUserData(data);
       setWorkerExpenses(workerExpenses);
     } catch (error) {
       console.error('Error saving worker expense:', error);
@@ -498,7 +549,7 @@ function App() {
 
   const handleSaveFactoryOverhead = async (overheadData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let factoryOverhead = data.factoryOverhead || [];
       if (overheadData.id) {
         factoryOverhead = factoryOverhead.map(e => e.id === overheadData.id ? { ...e, ...overheadData } : e);
@@ -510,7 +561,7 @@ function App() {
         showMessage('Muhtelif gider başarıyla eklendi!', 'success');
       }
       data.factoryOverhead = factoryOverhead;
-      await writeData(data);
+      await writeUserData(data);
       setFactoryOverhead(factoryOverhead);
     } catch (error) {
       console.error('Error saving factory overhead:', error);
@@ -520,7 +571,7 @@ function App() {
 
   const handleSavePomaceRevenue = async (revenueData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let pomaceRevenues = data.pomaceRevenues || [];
       if (revenueData.id) {
         pomaceRevenues = pomaceRevenues.map(e => e.id === revenueData.id ? { ...e, ...revenueData } : e);
@@ -532,7 +583,7 @@ function App() {
         showMessage('Pirina geliri başarıyla eklendi!', 'success');
       }
       data.pomaceRevenues = pomaceRevenues;
-      await writeData(data);
+      await writeUserData(data);
       setPomaceRevenues(pomaceRevenues);
     } catch (error) {
       console.error('Error saving pomace revenue:', error);
@@ -542,7 +593,7 @@ function App() {
 
   const handleSaveTinPurchase = async (purchaseData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let tinPurchases = data.tinPurchases || [];
       if (purchaseData.id) {
         tinPurchases = tinPurchases.map(e => e.id === purchaseData.id ? { ...e, ...purchaseData } : e);
@@ -554,7 +605,7 @@ function App() {
         showMessage('Teneke alımı başarıyla eklendi!', 'success');
       }
       data.tinPurchases = tinPurchases;
-      await writeData(data);
+      await writeUserData(data);
       setTinPurchases(tinPurchases);
     } catch (error) {
       console.error('Error saving tin purchase:', error);
@@ -564,7 +615,7 @@ function App() {
 
   const handleSavePlasticPurchase = async (purchaseData) => {
     try {
-      const data = await readData();
+      const data = await readUserData();
       let plasticPurchases = data.plasticPurchases || [];
       if (purchaseData.id) {
         plasticPurchases = plasticPurchases.map(e => e.id === purchaseData.id ? { ...e, ...purchaseData } : e);
@@ -576,7 +627,7 @@ function App() {
         showMessage('Bidon alımı başarıyla eklendi!', 'success');
       }
       data.plasticPurchases = plasticPurchases;
-      await writeData(data);
+      await writeUserData(data);
       setPlasticPurchases(plasticPurchases);
     } catch (error) {
       console.error('Error saving plastic purchase:', error);
@@ -587,11 +638,11 @@ function App() {
 // Silme işlemleri
 const handleDeleteItem = async (collectionName, id) => {
   try {
-    const data = await readData();
+    const data = await readUserData();
     let collection = data[collectionName] || [];
     collection = collection.filter(item => item.id !== id);
     data[collectionName] = collection;
-    await writeData(data);
+    await writeUserData(data);
     // State güncelle
     switch (collectionName) {
       case 'transactions': setTransactions(collection); break;
@@ -613,14 +664,14 @@ const handleDeleteItem = async (collectionName, id) => {
 
 const handleDeleteSingleCustomer = async (customerId) => {
   try {
-    const data = await readData();
+    const data = await readUserData();
     let customers = data.customers || [];
     let transactions = data.transactions || [];
     customers = customers.filter(c => c.id !== customerId);
     transactions = transactions.filter(t => t.customerId !== customerId);
     data.customers = customers;
     data.transactions = transactions;
-    await writeData(data);
+    await writeUserData(data);
     setCustomers(customers);
     setTransactions(transactions);
     showMessage('Müşteri ve tüm işlemleri başarıyla silindi.', 'success');
@@ -701,6 +752,22 @@ return (
             <NavItem text="İstatistikler" icon={<BarChart2 />} active={currentPage === 'statistics'} onClick={() => navigateTo('statistics')} />
             <NavItem text="Stoğumuz" icon={<Package />} active={currentPage === 'stock'} onClick={() => navigateTo('stock')} />
             <NavItem text="Yedekler" icon={<Download />} active={currentPage === 'backup'} onClick={() => navigateTo('backup')} />
+            <button 
+              onClick={async () => {
+                try {
+                  await signOut(auth);
+                  setUser(null);
+                  setAuthChecked(false);
+                } catch (error) {
+                  console.error('Çıkış hatası:', error);
+                }
+              }}
+              className="flex items-center space-x-2 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 shadow-lg"
+              title="Çıkış Yap"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-semibold text-sm">Çıkış</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -2818,7 +2885,7 @@ const BackupPage = ({ customers, transactions, workerExpenses, factoryOverhead, 
 
   const handleDownloadTxt = async () => {
     try {
-      const allData = await readData();
+      const allData = await readUserData();
 
       // Fabrika Genel Özeti'ni hesapla
       const totalOlive = allData.transactions.reduce((sum, t) => sum + Number(t.oliveKg || 0), 0);
