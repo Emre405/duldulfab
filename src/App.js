@@ -939,6 +939,7 @@ return (
             plasticPurchases={plasticPurchases}
             oilPurchases={oilPurchases}
             oilSales={oilSales}
+            readUserData={readUserData}
           />
         )}
       </main>
@@ -2905,7 +2906,7 @@ const PrintableReceipt = React.forwardRef(({ transactionData }, ref) => {
   );
 });
 
-const BackupPage = ({ customers, transactions, workerExpenses, factoryOverhead, pomaceRevenues, tinPurchases, plasticPurchases, oilPurchases, oilSales }) => {
+const BackupPage = ({ customers, transactions, workerExpenses, factoryOverhead, pomaceRevenues, tinPurchases, plasticPurchases, oilPurchases, oilSales, readUserData }) => {
   // Fabrika özetini hesapla
   const totalOlive = transactions.reduce((sum, t) => sum + Number(t.oliveKg || 0), 0);
   const totalProducedOil = transactions.reduce((sum, t) => sum + Number(t.oilLitre || 0), 0);
