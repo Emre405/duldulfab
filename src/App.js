@@ -792,11 +792,26 @@ return (
             <button 
               onClick={async () => {
                 try {
+                  console.log("Çıkış işlemi başlatılıyor...");
                   await signOut(auth);
+                  // State'leri temizle
                   setUser(null);
-                  setAuthChecked(false);
+                  setCustomers([]);
+                  setTransactions([]);
+                  setWorkerExpenses([]);
+                  setFactoryOverhead([]);
+                  setPomaceRevenues([]);
+                  setTinPurchases([]);
+                  setPlasticPurchases([]);
+                  setOilPurchases([]);
+                  setOilSales([]);
+                  // Auth durumunu resetle - bu önemli!
+                  setAuthChecked(true); // false değil true olmalı
+                  console.log("Çıkış işlemi tamamlandı");
                 } catch (error) {
                   console.error('Çıkış hatası:', error);
+                  // Hata durumunda da auth durumunu resetle
+                  setAuthChecked(true);
                 }
               }}
               className="flex items-center space-x-2 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 shadow-lg"
