@@ -5,13 +5,13 @@
 // self.importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compat.js');
 
 // firebase.initializeApp({
-//   apiKey: "AIzaSyA6x2AdGIpHAw5raa5dGpxZ3nSIuf_qx6M",
-//   authDomain: "duldulze.firebaseapp.com",
-//   projectId: "duldulze",
-//   storageBucket: "duldulze.firebasestorage.app",
-//   messagingSenderId: "262019588776",
-//   appId: "1:262019588776:web:37ec9a712992a10e67189d",
-//   measurementId: "G-DPEXV62Q3Q"
+//   apiKey: "AIzaSyDEkoUI7h1ovgxDAfImg_XOUeMmY1L5VMI",
+//   authDomain: "duldulzey.firebaseapp.com",
+//   projectId: "duldulzey",
+//   storageBucket: "duldulzey.firebasestorage.app",
+//   messagingSenderId: "86403571159",
+//   appId: "1:86403571159:web:74de375ee975556814ff92",
+//   measurementId: "G-Q2K8CVEH58"
 // });
 
 // const messaging = firebase.messaging(); 
