@@ -6,7 +6,7 @@ import Login from "./Login";
 import { auth } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Mock functions for readData and writeData to allow the app to run
@@ -78,7 +78,7 @@ const writeData = async (data, userId) => {
     try {
         console.log("Writing data to Firestore for user:", userId);
         const docRef = doc(db, 'userData', userId);
-        await setDoc(docRef, data);
+        await setDoc(docRef, data, { merge: true }); // merge: true ile sadece değişen alanları güncelle
         console.log("Data successfully written to Firestore");
     } catch (error) {
         console.error("Error writing data to Firestore:", error);
@@ -271,31 +271,68 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Data loading useEffect - MOVED BEFORE CONDITIONAL RETURNS
+  // Real-time data listener - MOVED BEFORE CONDITIONAL RETURNS
   useEffect(() => {
-    async function fetchData() {
-      const data = await readData(user?.uid);
-      setCustomers(data.customers || []);
-      setTransactions(data.transactions || []);
-      setWorkerExpenses(data.workerExpenses || []);
-      setFactoryOverhead(data.factoryOverhead || []);
-      setPomaceRevenues(data.pomaceRevenues || []);
-      setTinPurchases(data.tinPurchases || []);
-      setPlasticPurchases(data.plasticPurchases || []);
-      setOilPurchases(data.oilPurchases || []); // Yeni state'i yükle
-      setOilSales(data.oilSales || []); // Yeni state'i yükle
-      setDefaultPrices(data.defaultPrices || {
-        pricePerKg: 3,
-        tinPrices: { s16: 80, s10: 70, s5: 60 },
-        plasticPrices: { s10: 20, s5: 15, s2: 10 },
-        oilPurchasePrice: 200,
-        oilSalePrice: 250
-      });
-    }
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
+    if (!user?.uid) return;
+
+    console.log("Setting up real-time listener for user:", user.uid);
+    
+    // Firestore real-time listener kurulumu
+    const docRef = doc(db, 'userData', user.uid);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        console.log("Real-time data update received from Firestore");
+        const data = docSnap.data();
+        setCustomers(data.customers || []);
+        setTransactions(data.transactions || []);
+        setWorkerExpenses(data.workerExpenses || []);
+        setFactoryOverhead(data.factoryOverhead || []);
+        setPomaceRevenues(data.pomaceRevenues || []);
+        setTinPurchases(data.tinPurchases || []);
+        setPlasticPurchases(data.plasticPurchases || []);
+        setOilPurchases(data.oilPurchases || []);
+        setOilSales(data.oilSales || []);
+        setDefaultPrices(data.defaultPrices || {
+          pricePerKg: 3,
+          tinPrices: { s16: 80, s10: 70, s5: 60 },
+          plasticPrices: { s10: 20, s5: 15, s2: 10 },
+          oilPurchasePrice: 200,
+          oilSalePrice: 250
+        });
+      } else {
+        console.log("No Firestore data, loading initial data");
+        // İlk kez giriş yapıyorsa localStorage'dan geçiş yap
+        async function migrateData() {
+          const data = await readData(user.uid);
+          setCustomers(data.customers || []);
+          setTransactions(data.transactions || []);
+          setWorkerExpenses(data.workerExpenses || []);
+          setFactoryOverhead(data.factoryOverhead || []);
+          setPomaceRevenues(data.pomaceRevenues || []);
+          setTinPurchases(data.tinPurchases || []);
+          setPlasticPurchases(data.plasticPurchases || []);
+          setOilPurchases(data.oilPurchases || []);
+          setOilSales(data.oilSales || []);
+          setDefaultPrices(data.defaultPrices || {
+            pricePerKg: 3,
+            tinPrices: { s16: 80, s10: 70, s5: 60 },
+            plasticPrices: { s10: 20, s5: 15, s2: 10 },
+            oilPurchasePrice: 200,
+            oilSalePrice: 250
+          });
+        }
+        migrateData();
+      }
+    }, (error) => {
+      console.error("Real-time listener error:", error);
+    });
+
+    // Cleanup function
+    return () => {
+      console.log("Cleaning up real-time listener");
+      unsubscribe();
+    };
+  }, [user?.uid]);
 
   // Otomatik yedekleme zamanlayıcı - MOVED BEFORE CONDITIONAL RETURNS
   React.useEffect(() => {
