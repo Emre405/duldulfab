@@ -177,26 +177,9 @@ function calculateTinProfitLoss(tinPurchases, transactions) {
 }
 
 function App() {
+  // TÜM USESTATE'LER EN ÜSTTE OLMALI
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-
-  React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setAuthChecked(true);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (!authChecked) {
-    return <div>Yükleniyor...</div>;
-  }
-
-  if (!user) {
-    return <Login onLogin={() => setUser(auth.currentUser)} />;
-  }
-
-  // All useState declarations grouped at the very top
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [customers, setCustomers] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -228,10 +211,25 @@ function App() {
     oilSalePrice: 250
   });
 
+  // Authentication useEffect
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setAuthChecked(true);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // Initialize Firebase and set up authentication
+  // Early returns AFTER all useState hooks
+  if (!authChecked) {
+    return <div>Yükleniyor...</div>;
+  }
 
+  if (!user) {
+    return <Login onLogin={() => setUser(auth.currentUser)} />;
+    }
 
+  // Data loading useEffect
   useEffect(() => {
     async function fetchData() {
       const data = await readData();
