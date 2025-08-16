@@ -220,16 +220,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Early returns AFTER all useState hooks
-  if (!authChecked) {
-    return <div>Yükleniyor...</div>;
-  }
-
-  if (!user) {
-    return <Login onLogin={() => setUser(auth.currentUser)} />;
-    }
-
-  // Data loading useEffect
+  // Data loading useEffect - MOVED BEFORE CONDITIONAL RETURNS
   useEffect(() => {
     async function fetchData() {
       const data = await readData();
@@ -250,8 +241,45 @@ function App() {
         oilSalePrice: 250
       });
     }
-    fetchData();
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  // Otomatik yedekleme zamanlayıcı - MOVED BEFORE CONDITIONAL RETURNS
+  React.useEffect(() => {
+    let timer;
+    async function doBackup() {
+      // Electron-specific ipcRenderer code is removed for web compatibility
+      // You might replace this with a different backup mechanism for the web
+      console.log("Attempting automatic backup...");
+      try {
+        const data = await readData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        // This won't automatically download in the browser without user interaction.
+        // It's logged to the console to show the backup would happen.
+        console.log("Backup data prepared:", blob);
+        // showMessage('Otomatik yedekleme verisi oluşturuldu (konsola bakın).', 'success');
+      } catch (err) {
+        // showMessage('Otomatik yedekleme sırasında hata oluştu!', 'error');
+        console.error("Backup error:", err);
+      }
+    }
+    // İlk açılışta hemen yedekle
+    doBackup();
+    // Sonra her 24 saatte bir yedekle
+    timer = setInterval(doBackup, 24 * 60 * 60 * 1000);
+    return () => clearInterval(timer);
   }, []);
+
+  // Early returns AFTER all hooks
+  if (!authChecked) {
+    return <div>Yükleniyor...</div>;
+  }
+
+  if (!user) {
+    return <Login onLogin={() => setUser(auth.currentUser)} />;
+    }
 
   const showMessage = (msg, type) => {
     setMessage(msg);
@@ -637,41 +665,7 @@ const handleDeleteSelectedCustomers = (customerIds) => {
   setShowConfirmationModal(true);
 };
 
-// useEffect'lerden sonra koşullu return
-
-
-// Eğer giriş ekranı istemiyorsan aşağıdaki user kontrolünü kaldırabilirsin
-/*
-if (!user) {
-  return <Login onLogin={() => {}} />;
-}
-*/
-
-  // Otomatik yedekleme zamanlayıcı
-  React.useEffect(() => {
-    let timer;
-    async function doBackup() {
-      // Electron-specific ipcRenderer code is removed for web compatibility
-      // You might replace this with a different backup mechanism for the web
-      console.log("Attempting automatic backup...");
-      try {
-        const data = await readData();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        // This won't automatically download in the browser without user interaction.
-        // It's logged to the console to show the backup would happen.
-        console.log("Backup data prepared:", blob);
-        // showMessage('Otomatik yedekleme verisi oluşturuldu (konsola bakın).', 'success');
-      } catch (err) {
-        // showMessage('Otomatik yedekleme sırasında hata oluştu!', 'error');
-        console.error("Backup error:", err);
-      }
-    }
-    // İlk açılışta hemen yedekle
-    doBackup();
-    // Sonra her 24 saatte bir yedekle
-    timer = setInterval(doBackup, 24 * 60 * 60 * 1000);
-    return () => clearInterval(timer);
-  }, []);
+// All useEffect hooks moved before conditional returns
 
 return (
   <div className="min-h-screen bg-gray-50 font-inter flex flex-col">
