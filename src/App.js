@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Home, List, Users, BarChart2, Plus, Edit, Trash2, Download, Calendar, Search, Info, DollarSign, Droplet, Percent, Package, Factory, ChevronDown, ChevronUp, XCircle, CheckCircle, Settings, Coins, LogOut, Leaf, AlertCircle, ShoppingBag
 } from 'lucide-react';
+import Login from "./Login";
+import { auth } from "./firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 // Mock functions for readData and writeData to allow the app to run
 const mockData = {
@@ -175,6 +178,24 @@ function calculateTinProfitLoss(tinPurchases, transactions) {
 
 function App() {
   const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setAuthChecked(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (!authChecked) {
+    return <div>Yükleniyor...</div>;
+  }
+
+  if (!user) {
+    return <Login onLogin={() => setUser(auth.currentUser)} />;
+  }
+
   // All useState declarations grouped at the very top
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [customers, setCustomers] = useState([]);
