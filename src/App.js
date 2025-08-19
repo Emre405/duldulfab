@@ -8,6 +8,9 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 // Mock functions for readData and writeData to allow the app to run
 const mockData = {
@@ -520,13 +523,17 @@ function App() {
     try {
       const data = await readUserData();
       let oilPurchases = data.oilPurchases || [];
+      const normalizedPurchaseData = {
+        ...purchaseData,
+        date: new Date(purchaseData.date).toISOString()
+      };
       if (purchaseData.id) {
-        oilPurchases = oilPurchases.map(p => p.id === purchaseData.id ? { ...p, ...purchaseData } : p);
+        oilPurchases = oilPurchases.map(p => p.id === purchaseData.id ? { ...p, ...normalizedPurchaseData } : p);
         showMessage('Zeytinyağı alımı başarıyla güncellendi!', 'success');
       } else {
-        purchaseData.id = Date.now().toString();
-        purchaseData.createdAt = new Date().toISOString();
-        oilPurchases.push(purchaseData);
+        normalizedPurchaseData.id = Date.now().toString();
+        normalizedPurchaseData.createdAt = new Date().toISOString();
+        oilPurchases.push(normalizedPurchaseData);
         showMessage('Zeytinyağı alımı başarıyla eklendi!', 'success');
       }
       data.oilPurchases = oilPurchases;
@@ -543,13 +550,17 @@ function App() {
     try {
       const data = await readUserData();
       let oilSales = data.oilSales || [];
+      const normalizedSaleData = {
+        ...saleData,
+        date: new Date(saleData.date).toISOString()
+      };
       if (saleData.id) {
-        oilSales = oilSales.map(s => s.id === saleData.id ? { ...s, ...saleData } : s);
+        oilSales = oilSales.map(s => s.id === saleData.id ? { ...s, ...normalizedSaleData } : s);
         showMessage('Zeytinyağı satışı başarıyla güncellendi!', 'success');
       } else {
-        saleData.id = Date.now().toString();
-        saleData.createdAt = new Date().toISOString();
-        oilSales.push(saleData);
+        normalizedSaleData.id = Date.now().toString();
+        normalizedSaleData.createdAt = new Date().toISOString();
+        oilSales.push(normalizedSaleData);
         showMessage('Zeytinyağı satışı başarıyla eklendi!', 'success');
       }
       data.oilSales = oilSales;
@@ -566,13 +577,17 @@ function App() {
     try {
       const data = await readUserData();
       let workerExpenses = data.workerExpenses || [];
+      const normalizedExpenseData = {
+        ...expenseData,
+        date: new Date(expenseData.date).toISOString()
+      };
       if (expenseData.id) {
-        workerExpenses = workerExpenses.map(e => e.id === expenseData.id ? { ...e, ...expenseData } : e);
+        workerExpenses = workerExpenses.map(e => e.id === expenseData.id ? { ...e, ...normalizedExpenseData } : e);
         showMessage('İşçi harcaması başarıyla güncellendi!', 'success');
       } else {
-        expenseData.id = Date.now().toString();
-        expenseData.createdAt = new Date().toISOString();
-        workerExpenses.push(expenseData);
+        normalizedExpenseData.id = Date.now().toString();
+        normalizedExpenseData.createdAt = new Date().toISOString();
+        workerExpenses.push(normalizedExpenseData);
         showMessage('İşçi harcaması başarıyla eklendi!', 'success');
       }
       data.workerExpenses = workerExpenses;
@@ -588,13 +603,17 @@ function App() {
     try {
       const data = await readUserData();
       let factoryOverhead = data.factoryOverhead || [];
+      const normalizedOverheadData = {
+        ...overheadData,
+        date: new Date(overheadData.date).toISOString()
+      };
       if (overheadData.id) {
-        factoryOverhead = factoryOverhead.map(e => e.id === overheadData.id ? { ...e, ...overheadData } : e);
+        factoryOverhead = factoryOverhead.map(e => e.id === overheadData.id ? { ...e, ...normalizedOverheadData } : e);
         showMessage('Muhtelif gider başarıyla güncellendi!', 'success');
       } else {
-        overheadData.id = Date.now().toString();
-        overheadData.createdAt = new Date().toISOString();
-        factoryOverhead.push(overheadData);
+        normalizedOverheadData.id = Date.now().toString();
+        normalizedOverheadData.createdAt = new Date().toISOString();
+        factoryOverhead.push(normalizedOverheadData);
         showMessage('Muhtelif gider başarıyla eklendi!', 'success');
       }
       data.factoryOverhead = factoryOverhead;
@@ -610,13 +629,17 @@ function App() {
     try {
       const data = await readUserData();
       let pomaceRevenues = data.pomaceRevenues || [];
+      const normalizedRevenueData = {
+        ...revenueData,
+        date: new Date(revenueData.date).toISOString()
+      };
       if (revenueData.id) {
-        pomaceRevenues = pomaceRevenues.map(e => e.id === revenueData.id ? { ...e, ...revenueData } : e);
+        pomaceRevenues = pomaceRevenues.map(e => e.id === revenueData.id ? { ...e, ...normalizedRevenueData } : e);
         showMessage('Pirina geliri başarıyla güncellendi!', 'success');
       } else {
-        revenueData.id = Date.now().toString();
-        revenueData.createdAt = new Date().toISOString();
-        pomaceRevenues.push(revenueData);
+        normalizedRevenueData.id = Date.now().toString();
+        normalizedRevenueData.createdAt = new Date().toISOString();
+        pomaceRevenues.push(normalizedRevenueData);
         showMessage('Pirina geliri başarıyla eklendi!', 'success');
       }
       data.pomaceRevenues = pomaceRevenues;
@@ -632,13 +655,17 @@ function App() {
     try {
       const data = await readUserData();
       let tinPurchases = data.tinPurchases || [];
+      const normalizedPurchaseData = {
+        ...purchaseData,
+        date: new Date(purchaseData.date).toISOString()
+      };
       if (purchaseData.id) {
-        tinPurchases = tinPurchases.map(e => e.id === purchaseData.id ? { ...e, ...purchaseData } : e);
+        tinPurchases = tinPurchases.map(e => e.id === purchaseData.id ? { ...e, ...normalizedPurchaseData } : e);
         showMessage('Teneke alımı başarıyla güncellendi!', 'success');
       } else {
-        purchaseData.id = Date.now().toString();
-        purchaseData.createdAt = new Date().toISOString();
-        tinPurchases.push(purchaseData);
+        normalizedPurchaseData.id = Date.now().toString();
+        normalizedPurchaseData.createdAt = new Date().toISOString();
+        tinPurchases.push(normalizedPurchaseData);
         showMessage('Teneke alımı başarıyla eklendi!', 'success');
       }
       data.tinPurchases = tinPurchases;
@@ -654,13 +681,17 @@ function App() {
     try {
       const data = await readUserData();
       let plasticPurchases = data.plasticPurchases || [];
+      const normalizedPurchaseData = {
+        ...purchaseData,
+        date: new Date(purchaseData.date).toISOString()
+      };
       if (purchaseData.id) {
-        plasticPurchases = plasticPurchases.map(e => e.id === purchaseData.id ? { ...e, ...purchaseData } : e);
+        plasticPurchases = plasticPurchases.map(e => e.id === purchaseData.id ? { ...e, ...normalizedPurchaseData } : e);
         showMessage('Bidon alımı başarıyla güncellendi!', 'success');
       } else {
-        purchaseData.id = Date.now().toString();
-        purchaseData.createdAt = new Date().toISOString();
-        plasticPurchases.push(purchaseData);
+        normalizedPurchaseData.id = Date.now().toString();
+        normalizedPurchaseData.createdAt = new Date().toISOString();
+        plasticPurchases.push(normalizedPurchaseData);
         showMessage('Bidon alımı başarıyla eklendi!', 'success');
       }
       data.plasticPurchases = plasticPurchases;
@@ -1607,6 +1638,111 @@ const CustomerDetails = ({ customer, transactions, onEditTransaction, onDeleteTr
       }, 300);
     }
   };
+  const handleDownloadPDF = async () => {
+    if (!customer) return;
+    
+    try {
+      // Gizli bir div oluştur - yazdır çıktısının aynısı
+      const printableDiv = document.createElement('div');
+      printableDiv.style.position = 'absolute';
+      printableDiv.style.left = '-9999px';
+      printableDiv.style.width = '210mm';
+      printableDiv.style.padding = '20px';
+      printableDiv.style.fontFamily = 'Arial, sans-serif';
+      printableDiv.style.fontSize = '14px';
+      printableDiv.style.backgroundColor = 'white';
+      
+      // HTML içeriği oluştur
+      printableDiv.innerHTML = `
+        <div style="border: 2px dashed #333; border-radius: 12px; padding: 20px; max-width: 500px; margin: 0 auto; background: #fff;">
+          <h2 style="text-align: center; font-weight: 700; font-size: 20px; margin-bottom: 10px;">DÜLDÜL ZEYTİNYAĞI FABRİKASI</h2>
+          <table style="width: 100%; margin-bottom: 15px; font-size: 13px;">
+            <tbody>
+              <tr><td style="padding: 2px 0;"><b>Müşteri:</b></td><td style="padding: 2px 0;">${customer.name}</td><td style="padding: 2px 0;"><b>Toplam İşlem:</b></td><td style="padding: 2px 0;">${transactions.length}</td></tr>
+              <tr><td style="padding: 2px 0;"><b>İşlenen Zeytin:</b></td><td style="padding: 2px 0;">${formatNumber(totalOliveProcessed, 'kg')}</td><td style="padding: 2px 0;"><b>Üretilen Yağ:</b></td><td style="padding: 2px 0;">${formatNumber(totalOilProduced, 'L')}</td></tr>
+              <tr><td style="padding: 2px 0;"><b>Yağ Oranı:</b></td><td style="padding: 2px 0;">${(totalOliveProcessed > 0 && totalOilProduced > 0) ? (totalOliveProcessed / totalOilProduced).toFixed(2) : '-'}</td><td style="padding: 2px 0;"><b>Toplam Ücret:</b></td><td style="padding: 2px 0;">${formatNumber(totalBilledAmount, '₺')}</td></tr>
+              <tr><td style="padding: 2px 0;"><b>Alınan Ödeme:</b></td><td style="padding: 2px 0;">${formatNumber(totalPaymentReceived, '₺')}</td><td style="padding: 2px 0;"><b>Kalan Bakiye:</b></td><td style="padding: 2px 0;">${formatNumber(remainingBalance, '₺')}</td></tr>
+              <tr><td colspan="4" style="padding: 2px 0;"><b>Kullanılan Kaplar:</b> Teneke: ${totalTinCount}, Bidon: ${totalPlasticCount}</td></tr>
+            </tbody>
+          </table>
+          <h3 style="font-weight: 600; font-size: 16px; margin-bottom: 10px;">İşlem Geçmişi</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+              <tr style="background-color: #f3f3f3;">
+                <th style="border: 1px solid #bbbbbb; padding: 6px; text-align: left;">Tarih</th>
+                <th style="border: 1px solid #bbbbbb; padding: 6px; text-align: left;">Açıklama</th>
+                <th style="border: 1px solid #bbbbbb; padding: 6px; text-align: right;">Ücret</th>
+                <th style="border: 1px solid #bbbbbb; padding: 6px; text-align: right;">Alınan</th>
+                <th style="border: 1px solid #bbbbbb; padding: 6px; text-align: right;">Bakiye</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${transactions.map(t => {
+                const bakiye = (t.totalCost || 0) - (t.paymentReceived || 0) - (t.paymentLoss || 0);
+                const description = t.description ? `${t.description} (${formatNumber(t.oliveKg)} kg zeytin)` : `${formatNumber(t.oliveKg)} kg zeytin`;
+                return `
+                  <tr>
+                    <td style="border: 1px solid #bbbbbb; padding: 4px;">${new Date(t.date).toLocaleDateString()}</td>
+                    <td style="border: 1px solid #bbbbbb; padding: 4px;">${description}</td>
+                    <td style="border: 1px solid #bbbbbb; padding: 4px; text-align: right;">${formatNumber(t.totalCost, '₺')}</td>
+                    <td style="border: 1px solid #bbbbbb; padding: 4px; text-align: right;">${formatNumber(t.paymentReceived, '₺')}</td>
+                    <td style="border: 1px solid #bbbbbb; padding: 4px; text-align: right;">${formatNumber(bakiye, '₺')}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      // DOM'a ekle
+      document.body.appendChild(printableDiv);
+      
+      // Canvas'a çevir
+      const canvas = await html2canvas(printableDiv, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: 'white',
+        width: 800,
+        height: 1000
+      });
+      
+      // Canvas'tan image data al
+      const imgData = canvas.toDataURL('image/png');
+      
+      // PDF oluştur
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      // İlk sayfaya resmi ekle
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      // Eğer birden fazla sayfa gerekiyorsa
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      // PDF'i kaydet
+      const tarih = new Date().toLocaleDateString('tr-TR').replace(/\./g, '_');
+      pdf.save(`${customer.name}_Musteri_Detay_${tarih}.pdf`);
+      
+      // Temp div'i temizle
+      document.body.removeChild(printableDiv);
+      
+    } catch (error) {
+      console.error('PDF oluşturma hatası:', error);
+      alert('PDF oluşturulurken hata oluştu!');
+    }
+  };
   if (!customer) return <div className="text-center py-8"><p className="text-gray-600">Müşteri seçilmedi.</p><button onClick={onBack} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Geri Dön</button></div>;
 
   const totalOliveProcessed = transactions.reduce((sum, t) => sum + Number(t.oliveKg || 0), 0);
@@ -1625,6 +1761,7 @@ const CustomerDetails = ({ customer, transactions, onEditTransaction, onDeleteTr
         <h1 className="text-3xl font-bold text-gray-800">Müşteri Detayları: {customer.name}</h1>
         <div className="flex gap-2">
           <button onClick={onBack} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 shadow-sm">Geri Dön</button>
+          <button onClick={handleDownloadPDF} className="px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 shadow-sm transition-colors">PDF İndir</button>
           <button onClick={handlePrint} className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-sm transition-colors">Yazdır</button>
           <button 
             onClick={() => onDeleteCustomer(customer.id, customer.name)} 
@@ -1864,6 +2001,12 @@ const OilTrading = ({ oilPurchases, oilSales, onSaveOilPurchase, onSaveOilSale, 
     const sortedPurchases = [...oilPurchases].sort((a, b) => new Date(b.date) - new Date(a.date));
     const sortedSales = [...oilSales].sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    const [saleLimit, setSaleLimit] = useState(5);
+    const [purchaseLimit, setPurchaseLimit] = useState(5);
+
+    const limitedSales = saleLimit === 'all' ? sortedSales : sortedSales.slice(0, Number(saleLimit));
+    const limitedPurchases = purchaseLimit === 'all' ? sortedPurchases : sortedPurchases.slice(0, Number(purchaseLimit));
+
     return (
         <div className="space-y-8">
             <h1 className="text-3xl font-bold text-gray-800">Zeytinyağı Alım/Satım</h1>
@@ -1914,12 +2057,20 @@ const OilTrading = ({ oilPurchases, oilSales, onSaveOilPurchase, onSaveOilSale, 
 
             {/* Satışlar */}
             <div className="bg-white p-6 rounded-lg shadow-md">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-gray-800">Satışlar</h2>
-                    <button onClick={() => handleOpenSaleModal()} className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-md">
-                        <Plus className="w-5 h-5" />
-                        <span>Satış Ekle</span>
-                    </button>
+                    <div className="flex items-center space-x-2">
+                        <select value={saleLimit} onChange={e => setSaleLimit(e.target.value)} className="border rounded px-2 py-1">
+                            <option value={5}>Son 5</option>
+                            <option value={10}>Son 10</option>
+                            <option value={20}>Son 20</option>
+                            <option value="all">Tümü</option>
+                        </select>
+                        <button onClick={() => handleOpenSaleModal()} className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-md">
+                            <Plus className="w-5 h-5" />
+                            <span>Satış Ekle</span>
+                        </button>
+                    </div>
                 </div>
                 {oilSales.length === 0 ? <p className="text-gray-500">Henüz zeytinyağı satışı yapılmamıştır.</p> : (
                     <div className="overflow-x-auto">
@@ -1935,7 +2086,7 @@ const OilTrading = ({ oilPurchases, oilSales, onSaveOilPurchase, onSaveOilSale, 
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {sortedSales.map(s => (
+                                {limitedSales.map(s => (
                                     <tr key={s.id}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(s.date).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">{s.customerName}</td>
@@ -1960,12 +2111,20 @@ const OilTrading = ({ oilPurchases, oilSales, onSaveOilPurchase, onSaveOilSale, 
 
             {/* Alımlar */}
             <div className="bg-white p-6 rounded-lg shadow-md">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold text-gray-800">Alımlar</h2>
-                    <button onClick={() => handleOpenPurchaseModal()} className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-md">
-                        <Plus className="w-5 h-5" />
-                        <span>Alım Ekle</span>
-                    </button>
+                    <div className="flex items-center space-x-2">
+                        <select value={purchaseLimit} onChange={e => setPurchaseLimit(e.target.value)} className="border rounded px-2 py-1">
+                            <option value={5}>Son 5</option>
+                            <option value={10}>Son 10</option>
+                            <option value={20}>Son 20</option>
+                            <option value="all">Tümü</option>
+                        </select>
+                        <button onClick={() => handleOpenPurchaseModal()} className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-md">
+                            <Plus className="w-5 h-5" />
+                            <span>Alım Ekle</span>
+                        </button>
+                    </div>
                 </div>
                 {oilPurchases.length === 0 ? <p className="text-gray-500">Henüz zeytinyağı alımı yapılmamıştır.</p> : (
                     <div className="overflow-x-auto">
@@ -1981,7 +2140,7 @@ const OilTrading = ({ oilPurchases, oilSales, onSaveOilPurchase, onSaveOilSale, 
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {sortedPurchases.map(p => (
+                                {limitedPurchases.map(p => (
                                     <tr key={p.id}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">{new Date(p.date).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">{p.supplierName}</td>
@@ -2516,14 +2675,9 @@ const PaymentCollectionModal = ({ customer, onClose, onSavePayment }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (Number(amount) > 0) {
-      alert('Lütfen geçerli bir tutar girin.');
-    }
-    //alert('Lütfen geçerli bir tutar girin.');
-    if (Number(amount) > 0) {
       onSavePayment(customer.id, customer.name, amount);
     } else {
-      // Custom Modal
-      // alert('Lütfen geçerli bir tutar girin.');
+      alert('Lütfen geçerli bir tutar girin.');
     }
   };
 

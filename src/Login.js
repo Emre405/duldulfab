@@ -58,7 +58,7 @@ const Login = ({ onLogin }) => {
             </div>
           )}
           
-          <div className="mb-6">
+        <div className="mb-6">
             <label className="block mb-2 text-sm font-semibold text-gray-700">E-posta Adresi</label>
             <div className="relative">
               <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,10 +112,10 @@ const Login = ({ onLogin }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
                 Giriş Yap
-              </div>
+        </div>
             )}
-          </button>
-        </form>
+        </button>
+      </form>
         
         {/* Alt kısım */}
         <div className="text-center mt-6">
