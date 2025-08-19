@@ -3353,8 +3353,14 @@ const BackupPage = ({ customers, transactions, workerExpenses, factoryOverhead, 
 
       // Müşteri Kayıtları (EN ALTTA)
       fileContent += `==================================================\n`;
-      fileContent += `--- MÜŞTERİ KAYITLARI ---\n`;
-      customers.forEach(c => {
+      fileContent += `--- MÜŞTERİ KAYITLARI (Sadece Borçlu Müşteriler) ---\n`;
+      // Sadece borcu olan müşteriler
+      const debtors = customers.filter(c => {
+        const customerTransactions = allData.transactions.filter(t => t.customerId === c.id);
+        const totalDebt = customerTransactions.reduce((sum, t) => sum + (Number(t.totalCost || 0) - Number(t.paymentReceived || 0) - Number(t.paymentLoss || 0)), 0);
+        return totalDebt > 0;
+      });
+      debtors.forEach(c => {
         const customerTransactions = allData.transactions.filter(t => t.customerId === c.id);
         fileContent += `\n*** Müşteri Adı: ${c.name} ***\n`;
         fileContent += `  > İşlem Geçmişi:\n`;
@@ -3386,6 +3392,50 @@ const BackupPage = ({ customers, transactions, workerExpenses, factoryOverhead, 
     }
   };
 
+  // Borçsuz müşterileri txt olarak indir
+  const handleDownloadNonDebtorsTxt = async () => {
+    try {
+      const allData = await readUserData();
+      let fileContent = `DÜLDÜL ZEYTİNYAĞI FABRİKASI - BORÇSUZ MÜŞTERİLER YEDEK DOSYASI\n`;
+      fileContent += `Yedekleme Tarihi: ${new Date().toLocaleString('tr-TR')}\n`;
+      fileContent += `==================================================\n\n`;
+      fileContent += `--- MÜŞTERİ KAYITLARI (Sadece Borçsuz Müşteriler) ---\n`;
+      // Sadece borcu olmayan müşteriler
+      const nonDebtors = customers.filter(c => {
+        const customerTransactions = allData.transactions.filter(t => t.customerId === c.id);
+        const totalDebt = customerTransactions.reduce((sum, t) => sum + (Number(t.totalCost || 0) - Number(t.paymentReceived || 0) - Number(t.paymentLoss || 0)), 0);
+        return totalDebt <= 0;
+      });
+      nonDebtors.forEach(c => {
+        const customerTransactions = allData.transactions.filter(t => t.customerId === c.id);
+        fileContent += `\n*** Müşteri Adı: ${c.name} ***\n`;
+        fileContent += `  > İşlem Geçmişi:\n`;
+        if (customerTransactions.length > 0) {
+          customerTransactions.forEach(t => {
+            const description = t.description ? `${t.description} (${formatNumber(t.oliveKg)} kg zeytin)` : `${formatNumber(t.oliveKg)} kg zeytin`;
+            const remaining = (t.totalCost || 0) - (t.paymentReceived || 0) - (t.paymentLoss || 0);
+            fileContent += `    - Tarih: ${new Date(t.date).toLocaleDateString()}, Açıklama: ${description}, Tutar: ${formatNumber(t.totalCost, '₺')}, Alınan: ${formatNumber(t.paymentReceived, '₺')}, Kalan: ${formatNumber(remaining, '₺')}\n`;
+          });
+        } else {
+          fileContent += `    (Bu müşteriye ait işlem bulunmamaktadır.)\n`;
+        }
+      });
+      fileContent += `\n`;
+      const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `duldule_borcsuz_musteriler_${new Date().toISOString().split('T')[0]}.txt`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Borçsuz müşteriler dosyası oluşturulurken hata oluştu:", err);
+      alert("Borçsuz müşteriler dosyası oluşturulurken bir hata oluştu. Lütfen konsolu kontrol edin.");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Veri Yedekleme</h1>
@@ -3400,6 +3450,13 @@ const BackupPage = ({ customers, transactions, workerExpenses, factoryOverhead, 
         >
           <Download className="w-5 h-5" />
           <span>Yedek Dosyasını İndir (.txt)</span>
+        </button>
+        <button 
+          onClick={handleDownloadNonDebtorsTxt}
+          className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-md transition-colors w-full md:w-auto mt-4"
+        >
+          <Download className="w-5 h-5" />
+          <span>Borçsuz Müşterileri İndir (.txt)</span>
         </button>
       </div>
     </div>
